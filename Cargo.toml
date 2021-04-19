@@ -1,2 +1,9 @@
 [workspace]
-members = ["dumbbrain", "dumbbrain-repl", "dumbbrain-lexer", "dumbbrain-parser"]
+members = [
+    "dumbbrain",
+    "dumbbrain-repl",
+    "dumbbrain-lexer",
+    "dumbbrain-parser",
+    "dumbbrain-evaluator",
+    "dumbbrain-binder",
+]

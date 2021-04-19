@@ -39,11 +39,11 @@ impl<'s> Parser<'s> {
     }
 
     fn parse_factor(&mut self) -> ExpressionSyntax {
-        let mut left = self.parse_primary_expression();
+        let mut left = self.parse_unary_expression();
 
         while self.check(&[SyntaxKind::SlashToken, SyntaxKind::StarToken]) {
             let operator_token = self.bump().unwrap();
-            let right = self.parse_primary_expression();
+            let right = self.parse_unary_expression();
             left = ExpressionSyntax::Binary {
                 left: Box::new(left),
                 operator_token,
@@ -54,9 +54,36 @@ impl<'s> Parser<'s> {
         left
     }
 
+    fn parse_unary_expression(&mut self) -> ExpressionSyntax {
+        if self.check(&[SyntaxKind::PlusToken, SyntaxKind::MinusToken]) {
+            // unary!
+            let operator_token = self.bump().unwrap();
+            let right = self.parse_unary_expression();
+            ExpressionSyntax::Unary {
+                operator_token,
+                right: Box::new(right),
+            }
+        } else {
+            self.parse_primary_expression()
+        }
+    }
+
     fn parse_primary_expression(&mut self) -> ExpressionSyntax {
-        let literal_token = self.expect(SyntaxKind::NumberToken).unwrap();
-        ExpressionSyntax::Literal { literal_token }
+        if self.check(&[SyntaxKind::NumberToken]) {
+            let literal_token = self.bump().unwrap();
+            ExpressionSyntax::Literal { literal_token }
+        } else if self.check(&[SyntaxKind::LeftParenthesisToken]) {
+            let left_parenthesis_token = self.bump().unwrap();
+            let expression = self.parse();
+            let right_parenthesis_token = self.expect(SyntaxKind::RightParenthesisToken).unwrap();
+            ExpressionSyntax::Parenthesized {
+                left_parenthesis_token,
+                expression: Box::new(expression),
+                right_parenthesis_token,
+            }
+        } else {
+            todo!()
+        }
     }
 
     fn check(&mut self, kinds: &[SyntaxKind]) -> bool {

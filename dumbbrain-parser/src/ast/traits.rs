@@ -30,6 +30,7 @@ impl SyntaxNode for ExpressionSyntax {
             ExpressionSyntax::Literal { .. } => SyntaxKind::LiteralExpression,
             ExpressionSyntax::Binary { .. } => SyntaxKind::BinaryExpression,
             ExpressionSyntax::Unary { .. } => SyntaxKind::UnaryExpression,
+            ExpressionSyntax::Parenthesized { .. } => SyntaxKind::ParenthesizedExpression,
         }
     }
 
@@ -45,6 +46,15 @@ impl SyntaxNode for ExpressionSyntax {
                 operator_token,
                 right,
             } => vec![operator_token, right.as_ref()],
+            ExpressionSyntax::Parenthesized {
+                left_parenthesis_token,
+                expression,
+                right_parenthesis_token,
+            } => vec![
+                left_parenthesis_token,
+                expression.as_ref(),
+                right_parenthesis_token,
+            ],
         }
     }
 

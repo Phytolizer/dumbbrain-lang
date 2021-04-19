@@ -4,6 +4,7 @@ use dialoguer::console::style;
 use dialoguer::console::Term;
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::Input;
+use dumbbrain_evaluator::Evaluator;
 use dumbbrain_parser::ast::traits::SyntaxNode;
 use dumbbrain_parser::Parser;
 use ptree::TreeBuilder;
@@ -48,6 +49,11 @@ fn main() {
             },
         )
         .unwrap();
+        let bound_tree = dumbbrain_binder::Binder::bind_expression(&expression);
+        let value = Evaluator::new(bound_tree).evaluate();
+        if let Some(value) = value {
+            println!("==> {}", value);
+        }
     }
 }
 

@@ -16,4 +16,9 @@ pub enum ExpressionSyntax {
         operator_token: Token,
         right: Box<ExpressionSyntax>,
     },
+    Parenthesized {
+        left_parenthesis_token: Token,
+        expression: Box<ExpressionSyntax>,
+        right_parenthesis_token: Token,
+    },
 }

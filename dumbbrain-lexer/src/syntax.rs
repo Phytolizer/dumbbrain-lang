@@ -13,4 +13,5 @@ pub enum SyntaxKind {
     LiteralExpression,
     BinaryExpression,
     UnaryExpression,
+    ParenthesizedExpression,
 }
