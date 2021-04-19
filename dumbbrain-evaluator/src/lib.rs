@@ -45,6 +45,7 @@ impl Evaluator {
                 DumbBrainType::Number => Some(DumbBrainObject::Number(
                     -operand.unwrap().try_into_number().unwrap(),
                 )),
+                _ => panic!("unexpected type for {:?}: {:?}", operation, expression.kind),
             },
         }
     }
@@ -64,25 +65,45 @@ impl Evaluator {
                     left.unwrap().try_into_number().unwrap()
                         + right.unwrap().try_into_number().unwrap(),
                 ),
+                _ => panic!("unexpected type for {:?}: {:?}", operation, expression.kind),
             },
             BinaryOperation::Subtract => match expression.kind {
                 DumbBrainType::Number => DumbBrainObject::Number(
                     left.unwrap().try_into_number().unwrap()
                         - right.unwrap().try_into_number().unwrap(),
                 ),
+                _ => panic!("unexpected type for {:?}: {:?}", operation, expression.kind),
             },
             BinaryOperation::Multiply => match expression.kind {
                 DumbBrainType::Number => DumbBrainObject::Number(
                     left.unwrap().try_into_number().unwrap()
                         * right.unwrap().try_into_number().unwrap(),
                 ),
+                _ => panic!("unexpected type for {:?}: {:?}", operation, expression.kind),
             },
             BinaryOperation::Divide => match expression.kind {
                 DumbBrainType::Number => DumbBrainObject::Number(
                     left.unwrap().try_into_number().unwrap()
                         / right.unwrap().try_into_number().unwrap(),
                 ),
+                _ => panic!("unexpected type for {:?}: {:?}", operation, expression.kind),
             },
+            BinaryOperation::Equality => match left.as_ref().unwrap() {
+                DumbBrainObject::Number(n) if right.as_ref().unwrap().is_number() => {
+                    DumbBrainObject::Boolean(
+                        (*n - right.unwrap().try_into_number().unwrap()).abs() < 1e-6,
+                    )
+                }
+                DumbBrainObject::Boolean(b) if right.as_ref().unwrap().is_boolean() => {
+                    DumbBrainObject::Boolean(*b == right.unwrap().try_into_boolean().unwrap())
+                }
+                _ => panic!(
+                    "type mismatch on ==: {} vs {}",
+                    left.as_ref().unwrap(),
+                    right.as_ref().unwrap()
+                ),
+            },
+            BinaryOperation::Inequality => unreachable!(),
         }
     }
 }

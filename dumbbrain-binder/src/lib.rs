@@ -41,9 +41,15 @@ impl Binder {
                 if left.kind == DumbBrainType::Number && right.kind == DumbBrainType::Number {
                     DumbBrainType::Number
                 } else {
-                    todo!()
+                    panic!(
+                        "unexpected types for {:?}: {:?}, {:?}",
+                        operator_token.kind(),
+                        left.kind,
+                        right.kind
+                    )
                 }
             }
+            SyntaxKind::EqualsEqualsToken => DumbBrainType::Boolean,
             _ => unreachable!(),
         }
     }
@@ -68,6 +74,12 @@ impl Binder {
                     value: literal_token.value.clone(),
                 },
                 kind: DumbBrainType::Number,
+            },
+            SyntaxKind::TrueKeyword | SyntaxKind::FalseKeyword => BoundExpression {
+                node: BoundExpressionNode::Literal {
+                    value: literal_token.value.clone(),
+                },
+                kind: DumbBrainType::Boolean,
             },
             _ => unreachable!(),
         }
@@ -114,6 +126,14 @@ impl Binder {
                     left,
                     right,
                     operation: BinaryOperation::Divide,
+                },
+                kind: resolved_type,
+            },
+            SyntaxKind::EqualsEqualsToken => BoundExpression {
+                node: BoundExpressionNode::Binary {
+                    left,
+                    right,
+                    operation: BinaryOperation::Equality,
                 },
                 kind: resolved_type,
             },

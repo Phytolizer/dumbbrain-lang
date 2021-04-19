@@ -6,4 +6,5 @@ members = [
     "dumbbrain-parser",
     "dumbbrain-evaluator",
     "dumbbrain-binder",
+    "dumbbrain-macros",
 ]

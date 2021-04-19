@@ -9,4 +9,5 @@ edition = "2018"
 [dependencies]
 dumbbrain = { path = "../dumbbrain" }
 dumbbrain-lexer = { path = "../dumbbrain-lexer" }
+dumbbrain-macros = { path = "../dumbbrain-macros" }
 dumbbrain-parser = { path = "../dumbbrain-parser" }

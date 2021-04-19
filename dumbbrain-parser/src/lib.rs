@@ -23,57 +23,50 @@ impl<'s> Parser<'s> {
     }
 
     pub fn parse(&mut self) -> ExpressionSyntax {
-        self.parse_term()
+        self.parse_expression(0)
     }
 
-    fn parse_term(&mut self) -> ExpressionSyntax {
-        let mut left = self.parse_factor();
-
-        while self.check(&[SyntaxKind::PlusToken, SyntaxKind::MinusToken]) {
-            let operator_token = self.bump().unwrap();
-            let right = self.parse_factor();
-            left = ExpressionSyntax::Binary {
-                left: Box::new(left),
-                operator_token,
-                right: Box::new(right),
+    fn parse_expression(&mut self, parent_precedence: usize) -> ExpressionSyntax {
+        let unary_operator_precedence = self
+            .peek()
+            .map(|tok| tok.kind.unary_precedence())
+            .unwrap_or(0);
+        let mut left =
+            if unary_operator_precedence != 0 && unary_operator_precedence >= parent_precedence {
+                let operator_token = self.bump().unwrap();
+                let operand = self.parse_expression(unary_operator_precedence);
+                ExpressionSyntax::Unary {
+                    operator_token,
+                    right: Box::new(operand),
+                }
+            } else {
+                self.parse_primary_expression()
             };
-        }
 
-        left
-    }
-
-    fn parse_factor(&mut self) -> ExpressionSyntax {
-        let mut left = self.parse_unary_expression();
-
-        while self.check(&[SyntaxKind::SlashToken, SyntaxKind::StarToken]) {
-            let operator_token = self.bump().unwrap();
-            let right = self.parse_unary_expression();
-            left = ExpressionSyntax::Binary {
-                left: Box::new(left),
-                operator_token,
-                right: Box::new(right),
-            };
-        }
-
-        left
-    }
-
-    fn parse_unary_expression(&mut self) -> ExpressionSyntax {
-        if self.check(&[SyntaxKind::PlusToken, SyntaxKind::MinusToken]) {
-            // unary!
-            let operator_token = self.bump().unwrap();
-            let right = self.parse_unary_expression();
-            ExpressionSyntax::Unary {
-                operator_token,
-                right: Box::new(right),
+        loop {
+            let precedence = self
+                .peek()
+                .map(|tok| tok.kind.binary_precedence())
+                .unwrap_or(0);
+            if precedence == 0 || precedence <= parent_precedence {
+                break left;
             }
-        } else {
-            self.parse_primary_expression()
+            let operator_token = self.bump().unwrap();
+            let right = self.parse_expression(precedence);
+            left = ExpressionSyntax::Binary {
+                left: Box::new(left),
+                operator_token,
+                right: Box::new(right),
+            };
         }
     }
 
     fn parse_primary_expression(&mut self) -> ExpressionSyntax {
-        if self.check(&[SyntaxKind::NumberToken]) {
+        if self.check(&[
+            SyntaxKind::NumberToken,
+            SyntaxKind::TrueKeyword,
+            SyntaxKind::FalseKeyword,
+        ]) {
             let literal_token = self.bump().unwrap();
             ExpressionSyntax::Literal { literal_token }
         } else if self.check(&[SyntaxKind::LeftParenthesisToken]) {
@@ -86,8 +79,13 @@ impl<'s> Parser<'s> {
                 right_parenthesis_token,
             }
         } else {
-            todo!()
+            panic!("unexpected: {:#?}", self.peek());
         }
+    }
+
+    fn peek(&mut self) -> Option<&Token> {
+        self.eat_whitespace();
+        self.lexer.peek()
     }
 
     fn check(&mut self, kinds: &[SyntaxKind]) -> bool {
@@ -342,7 +340,9 @@ mod tests {
 
     #[test]
     fn parentheses_override_precedence() {
-        check("(1 + 2) * 3", expect![[r#"
+        check(
+            "(1 + 2) * 3",
+            expect![[r#"
             ParseTree
             └─ BinaryExpression
                ├─ ParenthesizedExpression
@@ -357,6 +357,27 @@ mod tests {
                ├─ StarToken
                └─ LiteralExpression
                   └─ NumberToken 3
-        "#]])
+        "#]],
+        )
+    }
+
+    #[test]
+    fn unary_binds_stronger() {
+        check(
+            "-1 * -2",
+            expect![[r#"
+                ParseTree
+                └─ BinaryExpression
+                   ├─ UnaryExpression
+                   │  ├─ MinusToken
+                   │  └─ LiteralExpression
+                   │     └─ NumberToken 1
+                   ├─ StarToken
+                   └─ UnaryExpression
+                      ├─ MinusToken
+                      └─ LiteralExpression
+                         └─ NumberToken 2
+            "#]],
+        )
     }
 }
