@@ -10,3 +10,6 @@ edition = "2018"
 dumbbrain = { path = "../dumbbrain" }
 dumbbrain-lexer = { path = "../dumbbrain-lexer" }
 ptree = "0.3.2"
+
+[dev-dependencies]
+expect-test = "1.1.0"
