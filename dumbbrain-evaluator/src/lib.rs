@@ -5,6 +5,8 @@ use dumbbrain_binder::BoundExpression;
 use dumbbrain_binder::BoundExpressionNode;
 use dumbbrain_binder::UnaryOperation;
 
+const FLOATING_POINT_DELTA: f64 = 1e-6;
+
 pub struct Evaluator {
     bound_tree: BoundExpression,
 }
@@ -88,22 +90,50 @@ impl Evaluator {
                 ),
                 _ => panic!("unexpected type for {:?}: {:?}", operation, expression.kind),
             },
-            BinaryOperation::Equality => match left.as_ref().unwrap() {
-                DumbBrainObject::Number(n) if right.as_ref().unwrap().is_number() => {
-                    DumbBrainObject::Boolean(
-                        (*n - right.unwrap().try_into_number().unwrap()).abs() < 1e-6,
-                    )
-                }
-                DumbBrainObject::Boolean(b) if right.as_ref().unwrap().is_boolean() => {
-                    DumbBrainObject::Boolean(*b == right.unwrap().try_into_boolean().unwrap())
-                }
-                _ => panic!(
-                    "type mismatch on ==: {} vs {}",
-                    left.as_ref().unwrap(),
-                    right.as_ref().unwrap()
-                ),
-            },
-            BinaryOperation::Inequality => unreachable!(),
+            BinaryOperation::Equality
+            | BinaryOperation::Inequality
+            | BinaryOperation::Less
+            | BinaryOperation::LessEquals
+            | BinaryOperation::Greater
+            | BinaryOperation::GreaterEquals => check_comparison(left, right, *operation),
         }
     }
+}
+
+fn check_comparison(
+    left: Option<DumbBrainObject>,
+    right: Option<DumbBrainObject>,
+    operation: BinaryOperation,
+) -> DumbBrainObject {
+    let value = match *left.as_ref().unwrap() {
+        DumbBrainObject::Number(n) if right.as_ref().unwrap().is_number() => {
+            let m = right.unwrap().try_into_number().unwrap();
+            match operation {
+                BinaryOperation::Equality => (n - m).abs() < FLOATING_POINT_DELTA,
+                BinaryOperation::Inequality => (n - m).abs() > FLOATING_POINT_DELTA,
+                BinaryOperation::Less => n < m,
+                BinaryOperation::LessEquals => n <= m,
+                BinaryOperation::Greater => n > m,
+                BinaryOperation::GreaterEquals => n >= m,
+                _ => unreachable!(),
+            }
+        }
+        DumbBrainObject::Boolean(b) if right.as_ref().unwrap().is_boolean() => {
+            let c = right.unwrap().try_into_boolean().unwrap();
+            match operation {
+                BinaryOperation::Equality => b == c,
+                BinaryOperation::Inequality => b != c,
+                _ => panic!(
+                    "type mismatch: cannot perform comparison {:?} on Boolean and Boolean",
+                    operation
+                ),
+            }
+        }
+        _ => panic!(
+            "type mismatch on ==: {} vs {}",
+            left.as_ref().unwrap(),
+            right.as_ref().unwrap()
+        ),
+    };
+    DumbBrainObject::Boolean(value)
 }

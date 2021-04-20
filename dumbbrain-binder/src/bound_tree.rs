@@ -15,7 +15,11 @@ pub enum BinaryOperation {
     Divide,
 
     Equality,
-    Inequality, // TODO
+    Inequality,
+    Less,
+    LessEquals,
+    Greater,
+    GreaterEquals,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

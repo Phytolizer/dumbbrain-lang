@@ -49,7 +49,12 @@ impl Binder {
                     )
                 }
             }
-            SyntaxKind::EqualsEqualsToken => DumbBrainType::Boolean,
+            SyntaxKind::EqualsEqualsToken
+            | SyntaxKind::BangEqualsToken
+            | SyntaxKind::LessToken
+            | SyntaxKind::LessEqualsToken
+            | SyntaxKind::GreaterToken
+            | SyntaxKind::GreaterEqualsToken => DumbBrainType::Boolean,
             _ => unreachable!(),
         }
     }
@@ -134,6 +139,46 @@ impl Binder {
                     left,
                     right,
                     operation: BinaryOperation::Equality,
+                },
+                kind: resolved_type,
+            },
+            SyntaxKind::BangEqualsToken => BoundExpression {
+                node: BoundExpressionNode::Binary {
+                    left,
+                    right,
+                    operation: BinaryOperation::Inequality,
+                },
+                kind: resolved_type,
+            },
+            SyntaxKind::LessToken => BoundExpression {
+                node: BoundExpressionNode::Binary {
+                    left,
+                    right,
+                    operation: BinaryOperation::Less,
+                },
+                kind: resolved_type,
+            },
+            SyntaxKind::LessEqualsToken => BoundExpression {
+                node: BoundExpressionNode::Binary {
+                    left,
+                    right,
+                    operation: BinaryOperation::LessEquals,
+                },
+                kind: resolved_type,
+            },
+            SyntaxKind::GreaterToken => BoundExpression {
+                node: BoundExpressionNode::Binary {
+                    left,
+                    right,
+                    operation: BinaryOperation::Greater,
+                },
+                kind: resolved_type,
+            },
+            SyntaxKind::GreaterEqualsToken => BoundExpression {
+                node: BoundExpressionNode::Binary {
+                    left,
+                    right,
+                    operation: BinaryOperation::GreaterEquals,
                 },
                 kind: resolved_type,
             },

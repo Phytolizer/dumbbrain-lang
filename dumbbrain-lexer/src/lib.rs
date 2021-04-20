@@ -217,6 +217,61 @@ impl<'s> Iterator for Lexer<'s> {
                     },
                 ))
             }
+            (pos, '!') if matches!(self.source.peek(), Some((_, '='))) => {
+                self.advance();
+                Some(Token::new(
+                    SyntaxKind::BangEqualsToken,
+                    pos,
+                    "!=".into(),
+                    None,
+                    Span {
+                        first_line,
+                        first_column,
+                        last_line: self.line_number,
+                        last_column: self.column_offset,
+                    },
+                ))
+            }
+            (pos, '<') => {
+                let (kind, literal) = if let Some((_, '=')) = self.source.peek() {
+                    self.advance();
+                    (SyntaxKind::LessEqualsToken, "<=")
+                } else {
+                    (SyntaxKind::LessToken, "<")
+                };
+                Some(Token::new(
+                    kind,
+                    pos,
+                    literal.into(),
+                    None,
+                    Span {
+                        first_line,
+                        first_column,
+                        last_line: self.line_number,
+                        last_column: self.column_offset,
+                    },
+                ))
+            }
+            (pos, '>') => {
+                let (kind, literal) = if let Some((_, '=')) = self.source.peek() {
+                    self.advance();
+                    (SyntaxKind::GreaterEqualsToken, ">=")
+                } else {
+                    (SyntaxKind::GreaterToken, ">")
+                };
+                Some(Token::new(
+                    kind,
+                    pos,
+                    literal.into(),
+                    None,
+                    Span {
+                        first_line,
+                        first_column,
+                        last_line: self.line_number,
+                        last_column: self.column_offset,
+                    },
+                ))
+            }
             (pos, c) => Some(Token::new(
                 SyntaxKind::BadToken,
                 pos,
