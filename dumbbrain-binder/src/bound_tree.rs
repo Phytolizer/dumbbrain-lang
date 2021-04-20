@@ -20,6 +20,8 @@ pub enum BinaryOperation {
     LessEquals,
     Greater,
     GreaterEquals,
+    LogicalAnd,
+    LogicalOr,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

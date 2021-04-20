@@ -14,6 +14,8 @@ pub enum SyntaxKind {
     LessEqualsToken,
     GreaterToken,
     GreaterEqualsToken,
+    AmpersandAmpersandToken,
+    PipePipeToken,
 
     IdentifierToken,
 
@@ -38,20 +40,21 @@ pub(crate) fn check_keyword(lexeme: &str) -> SyntaxKind {
 impl SyntaxKind {
     pub fn binary_precedence(self) -> usize {
         match self {
-            Self::PlusToken | Self::MinusToken => 3,
-            Self::StarToken | Self::SlashToken => 4,
+            Self::PlusToken | Self::MinusToken => 4,
+            Self::StarToken | Self::SlashToken => 5,
             Self::EqualsEqualsToken | Self::BangEqualsToken => 1,
+            Self::AmpersandAmpersandToken | Self::PipePipeToken => 2,
             Self::LessToken
             | Self::LessEqualsToken
             | Self::GreaterToken
-            | Self::GreaterEqualsToken => 2,
+            | Self::GreaterEqualsToken => 3,
             _ => 0,
         }
     }
 
     pub fn unary_precedence(self) -> usize {
         match self {
-            Self::PlusToken | Self::MinusToken => 5,
+            Self::PlusToken | Self::MinusToken => 6,
             _ => 0,
         }
     }

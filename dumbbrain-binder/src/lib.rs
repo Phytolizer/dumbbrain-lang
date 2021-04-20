@@ -54,7 +54,9 @@ impl Binder {
             | SyntaxKind::LessToken
             | SyntaxKind::LessEqualsToken
             | SyntaxKind::GreaterToken
-            | SyntaxKind::GreaterEqualsToken => DumbBrainType::Boolean,
+            | SyntaxKind::GreaterEqualsToken
+            | SyntaxKind::AmpersandAmpersandToken
+            | SyntaxKind::PipePipeToken => DumbBrainType::Boolean,
             _ => unreachable!(),
         }
     }
@@ -179,6 +181,22 @@ impl Binder {
                     left,
                     right,
                     operation: BinaryOperation::GreaterEquals,
+                },
+                kind: resolved_type,
+            },
+            SyntaxKind::AmpersandAmpersandToken => BoundExpression {
+                node: BoundExpressionNode::Binary {
+                    left,
+                    right,
+                    operation: BinaryOperation::LogicalAnd,
+                },
+                kind: resolved_type,
+            },
+            SyntaxKind::PipePipeToken => BoundExpression {
+                node: BoundExpressionNode::Binary {
+                    left,
+                    right,
+                    operation: BinaryOperation::LogicalOr,
                 },
                 kind: resolved_type,
             },

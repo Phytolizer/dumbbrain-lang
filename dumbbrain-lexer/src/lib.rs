@@ -13,16 +13,20 @@ pub mod token;
 
 pub struct Lexer<'s> {
     source: Peekable<CharIndices<'s>>,
-    line_number: usize,
+    line: usize,
     column_offset: usize,
+    token_start_line: usize,
+    token_start_column_offset: usize,
 }
 
 impl<'s> Lexer<'s> {
     pub fn new(text: &'s str) -> Self {
         Self {
             source: text.char_indices().peekable(),
-            line_number: 1,
+            line: 1,
             column_offset: 1,
+            token_start_line: 1,
+            token_start_column_offset: 1,
         }
     }
 
@@ -30,7 +34,7 @@ impl<'s> Lexer<'s> {
         let (i, c) = self.source.next()?;
         match c {
             '\n' => {
-                self.line_number += 1;
+                self.line += 1;
                 self.column_offset = 1;
             }
             _ => {
@@ -39,14 +43,23 @@ impl<'s> Lexer<'s> {
         }
         Some((i, c))
     }
+
+    fn span(&self) -> Span {
+        Span {
+            first_line: self.token_start_line,
+            first_column: self.token_start_column_offset,
+            last_line: self.line,
+            last_column: self.column_offset,
+        }
+    }
 }
 
 impl<'s> Iterator for Lexer<'s> {
     type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let first_line = self.line_number;
-        let first_column = self.column_offset;
+        self.token_start_line = self.line;
+        self.token_start_column_offset = self.column_offset;
         match self.advance()? {
             (start, c) if c.is_ascii_digit() => {
                 let mut lexeme = c.to_string();
@@ -58,20 +71,13 @@ impl<'s> Iterator for Lexer<'s> {
                     lexeme.push(c);
                 }
 
-                let last_line = self.line_number;
-                let last_column = self.column_offset;
                 let value = DumbBrainObject::Number(lexeme.parse().unwrap());
                 Some(Token::new(
                     SyntaxKind::NumberToken,
                     start,
                     lexeme,
                     value,
-                    Span {
-                        first_line,
-                        first_column,
-                        last_line,
-                        last_column,
-                    },
+                    self.span(),
                 ))
             }
             (start, c) if c.is_alphabetic() => {
@@ -83,8 +89,6 @@ impl<'s> Iterator for Lexer<'s> {
                     self.advance();
                     lexeme.push(c);
                 }
-                let last_line = self.line_number;
-                let last_column = self.column_offset;
                 let kind = check_keyword(&lexeme);
                 let value = match kind {
                     SyntaxKind::TrueKeyword | SyntaxKind::FalseKeyword => {
@@ -92,18 +96,7 @@ impl<'s> Iterator for Lexer<'s> {
                     }
                     _ => None,
                 };
-                Some(Token::new(
-                    kind,
-                    start,
-                    lexeme,
-                    value,
-                    Span {
-                        first_line,
-                        first_column,
-                        last_line,
-                        last_column,
-                    },
-                ))
+                Some(Token::new(kind, start, lexeme, value, self.span()))
             }
             (start, c) if c.is_whitespace() => {
                 let mut lexeme = c.to_string();
@@ -115,19 +108,12 @@ impl<'s> Iterator for Lexer<'s> {
                     lexeme.push(c);
                 }
 
-                let last_line = self.line_number;
-                let last_column = self.column_offset;
                 Some(Token::new(
                     SyntaxKind::WhitespaceToken,
                     start,
                     lexeme,
                     None,
-                    Span {
-                        first_line,
-                        first_column,
-                        last_line,
-                        last_column,
-                    },
+                    self.span(),
                 ))
             }
             (pos, '+') => Some(Token::new(
@@ -135,72 +121,42 @@ impl<'s> Iterator for Lexer<'s> {
                 pos,
                 String::from("+"),
                 None,
-                Span {
-                    first_line,
-                    first_column,
-                    last_line: self.line_number,
-                    last_column: self.column_offset,
-                },
+                self.span(),
             )),
             (pos, '-') => Some(Token::new(
                 SyntaxKind::MinusToken,
                 pos,
                 String::from("-"),
                 None,
-                Span {
-                    first_line,
-                    first_column,
-                    last_line: self.line_number,
-                    last_column: self.column_offset,
-                },
+                self.span(),
             )),
             (pos, '*') => Some(Token::new(
                 SyntaxKind::StarToken,
                 pos,
                 String::from("*"),
                 None,
-                Span {
-                    first_line,
-                    first_column,
-                    last_line: self.line_number,
-                    last_column: self.column_offset,
-                },
+                self.span(),
             )),
             (pos, '/') => Some(Token::new(
                 SyntaxKind::SlashToken,
                 pos,
                 String::from("/"),
                 None,
-                Span {
-                    first_line,
-                    first_column,
-                    last_line: self.line_number,
-                    last_column: self.column_offset,
-                },
+                self.span(),
             )),
             (pos, '(') => Some(Token::new(
                 SyntaxKind::LeftParenthesisToken,
                 pos,
                 String::from("("),
                 None,
-                Span {
-                    first_line,
-                    first_column,
-                    last_line: self.line_number,
-                    last_column: self.column_offset,
-                },
+                self.span(),
             )),
             (pos, ')') => Some(Token::new(
                 SyntaxKind::RightParenthesisToken,
                 pos,
                 String::from(")"),
                 None,
-                Span {
-                    first_line,
-                    first_column,
-                    last_line: self.line_number,
-                    last_column: self.column_offset,
-                },
+                self.span(),
             )),
             (pos, '=') if matches!(self.source.peek(), Some((_, '='))) => {
                 self.advance();
@@ -209,12 +165,7 @@ impl<'s> Iterator for Lexer<'s> {
                     pos,
                     "==".into(),
                     None,
-                    Span {
-                        first_line,
-                        first_column,
-                        last_line: self.line_number,
-                        last_column: self.column_offset,
-                    },
+                    self.span(),
                 ))
             }
             (pos, '!') if matches!(self.source.peek(), Some((_, '='))) => {
@@ -224,12 +175,7 @@ impl<'s> Iterator for Lexer<'s> {
                     pos,
                     "!=".into(),
                     None,
-                    Span {
-                        first_line,
-                        first_column,
-                        last_line: self.line_number,
-                        last_column: self.column_offset,
-                    },
+                    self.span(),
                 ))
             }
             (pos, '<') => {
@@ -239,18 +185,7 @@ impl<'s> Iterator for Lexer<'s> {
                 } else {
                     (SyntaxKind::LessToken, "<")
                 };
-                Some(Token::new(
-                    kind,
-                    pos,
-                    literal.into(),
-                    None,
-                    Span {
-                        first_line,
-                        first_column,
-                        last_line: self.line_number,
-                        last_column: self.column_offset,
-                    },
-                ))
+                Some(Token::new(kind, pos, literal.into(), None, self.span()))
             }
             (pos, '>') => {
                 let (kind, literal) = if let Some((_, '=')) = self.source.peek() {
@@ -259,17 +194,16 @@ impl<'s> Iterator for Lexer<'s> {
                 } else {
                     (SyntaxKind::GreaterToken, ">")
                 };
+                Some(Token::new(kind, pos, literal.into(), None, self.span()))
+            }
+            (pos, '&') if matches!(self.source.peek(), Some((_, '&'))) => {
+                self.advance();
                 Some(Token::new(
-                    kind,
+                    SyntaxKind::AmpersandAmpersandToken,
                     pos,
-                    literal.into(),
+                    "&&".into(),
                     None,
-                    Span {
-                        first_line,
-                        first_column,
-                        last_line: self.line_number,
-                        last_column: self.column_offset,
-                    },
+                    self.span(),
                 ))
             }
             (pos, c) => Some(Token::new(
@@ -277,12 +211,7 @@ impl<'s> Iterator for Lexer<'s> {
                 pos,
                 c.to_string(),
                 None,
-                Span {
-                    first_line,
-                    first_column,
-                    last_line: self.line_number,
-                    last_column: self.column_offset,
-                },
+                self.span(),
             )),
         }
     }

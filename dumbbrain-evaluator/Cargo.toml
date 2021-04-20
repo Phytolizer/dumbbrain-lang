@@ -11,3 +11,4 @@ dumbbrain = { path = "../dumbbrain" }
 dumbbrain-binder = { path = "../dumbbrain-binder" }
 dumbbrain-lexer = { path = "../dumbbrain-lexer" }
 dumbbrain-parser = { path = "../dumbbrain-parser" }
+expect-test = "1.1.0"
